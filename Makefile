@@ -1,5 +1,5 @@
 CC=m68k-elf-gcc
-CFLAGS= -c -Wall -m68030 -O2 -I src/include/
+CFLAGS= -c -Wall -m68030 -O0 -I src/include/
 
 ASM=m68k-elf-as
 AFLAGS=-m68030

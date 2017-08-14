@@ -31,7 +31,7 @@ run_process:
 	clr.l %d0
 	move.w (%a0), %d0
 	move.l %d0, -(%sp)
-	jsr page_addr
+	jsr frame_addr
 	addq.l #4, %sp
 	
 	/*push root pointer contents*/

@@ -105,7 +105,7 @@ void serial_interrupt(){
 	
 	
 	if(isr&0x08){
-		char c = *((char*)0x8000000F);
+		volatile char c = *((char*)0x8000000F);
 		time++;
 		
 	}

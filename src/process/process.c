@@ -3,18 +3,6 @@
 
 #define NUM_PROCESSES 1
 
-typedef struct {
-	uint16_t pd_id; //page directory //fix for MORERAM
-	uint32_t reg_pc;// program counter
-	uint16_t reg_cr; //status register?
-	uint32_t reg_d[8];
-	uint32_t reg_a[7];
-	uint32_t reg_sp;
-	uint16_t page_ll;// linked list of pages used by this process //fix for MORERAM
-	
-} process;
-
-
 process proceses[NUM_PROCESSES];
 
 uint16_t pid_stack[NUM_PROCESSES];
@@ -31,18 +19,18 @@ uint16_t get_free_pid(){
 	return 0;
 }
 
-uint16_t load_small_process(uint32_t* loadaddr){// starts new process
+uint16_t load_small_process(void* loadaddr){// starts new process
 	uint16_t pid=get_free_pid();
-	uint16_t pd_id=get_page();
-	uint16_t pt_id=get_page();
-	uint16_t prog_id=get_page();
-	uint16_t stack_id=get_page();
+	uint16_t pd_id=get_frame();//frame for frame directory
+	uint16_t pt_id=get_frame();//frame for frame table
+	uint16_t prog_id=get_frame();// frame for program 
+	uint16_t stack_id=get_frame(); // frame for stack
 	printf("pd: %d\n",pd_id);
-	uint32_t* pd=(uint32_t*)page_addr(pd_id);
-	uint32_t* pt=(uint32_t*)page_addr(pt_id);
-	uint32_t* prog=(uint32_t*)page_addr(prog_id);
-	uint32_t* stack=(uint32_t*)page_addr(stack_id);
-	printf("pd: 0x%X\n",pd);
+	uint32_t* pd=(uint32_t*)frame_addr(pd_id);
+	uint32_t* pt=(uint32_t*)frame_addr(pt_id);
+	uint32_t* prog=(uint32_t*)frame_addr(prog_id);
+	uint32_t* stack=(uint32_t*)frame_addr(stack_id);
+	printf("pd: 0x%X\n",(uint32_t)pd);
 	int i;
 	for(i=0;i<1024;i++){
 		pd[i]=0;
@@ -60,7 +48,7 @@ uint16_t load_small_process(uint32_t* loadaddr){// starts new process
 	proceses[pid].reg_sp=0x2000;
 	
 	for(i=0;i<64;i++){
-		prog[i]=loadaddr[i];
+		prog[i]=((uint32_t*)loadaddr)[i];
 	}
 	
 	return pid;
