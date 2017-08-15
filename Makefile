@@ -7,33 +7,49 @@ AFLAGS=-m68030
 LD=m68k-elf-ld
 LFLAGS=-T ram.ld
 
-C_SRC = $(wildcard src/*.c)\
-		$(wildcard src/core/*.c)\
-		$(wildcard src/memory/*.c)\
-		$(wildcard src/process/*.c)\
-		$(wildcard src/lib/*.c)\
-		$(wildcard src/driver/*.c)
-C_OBJ = $(C_SRC:.c=.o)
-ASM_SRC = $(wildcard src/*.s)\
-		$(wildcard src/core/*.s)\
-		$(wildcard src/memory/*.s)\
-		$(wildcard src/process/*.s)\
-		$(wildcard src/lib/*.s)\
-		$(wildcard src/driver/*.s)
-		
-ASM_OBJ = $(ASM_SRC:.s=.o)
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
+
+C_SRC = $(wildcard $(SRCDIR)/*.c)\
+		$(wildcard $(SRCDIR)/core/*.c)\
+		$(wildcard $(SRCDIR)/memory/*.c)\
+		$(wildcard $(SRCDIR)/process/*.c)\
+		$(wildcard $(SRCDIR)/lib/*.c)\
+		$(wildcard $(SRCDIR)/driver/*.c)
+C_OBJ = $(C_SRC:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
+
+ASM_SRC = $(wildcard $(SRCDIR)/*.s)\
+		$(wildcard $(SRCDIR)/core/*.s)\
+		$(wildcard $(SRCDIR)/memory/*.s)\
+		$(wildcard $(SRCDIR)/process/*.s)\
+		$(wildcard $(SRCDIR)/lib/*.s)\
+		$(wildcard $(SRCDIR)/driver/*.s)	
+ASM_OBJ = $(ASM_SRC:$(SRCDIR)/%.s=$(OBJDIR)/%.o)
 
 OUTPUT = kernel.bin
 
 all: $(ASM_SRC) $(C_SRC) $(OUTPUT)
 
-$(OUTPUT): $(C_OBJ) $(ASM_OBJ)
-	$(LD) -o $(OUTPUT) $(LFLAGS) $(C_OBJ) $(ASM_OBJ)
+init:
+	mkdir $(OBJDIR)
+	mkdir $(OBJDIR)/core
+	mkdir $(OBJDIR)/memory
+	mkdir $(OBJDIR)/process
+	mkdir $(OBJDIR)/lib
+	mkdir $(OBJDIR)/driver
 
-.c.o:
-	$(CC) $(CFLAGS) $< -o $@
-.s.o:
-	$(ASM) $(AFLAGS) $< -o $@
+$(OUTPUT): $(C_OBJ) $(ASM_OBJ)
+	@$(LD) -o $(OUTPUT) $(LFLAGS) $(C_OBJ) $(ASM_OBJ)
+	@echo "Built "$<" successfully!"
+
+$(C_OBJ): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	@$(CC) $(CFLAGS) $< -o $@
+	@echo "Compiled "$<" successfully!"
+
+$(ASM_OBJ): $(OBJDIR)/%.o : $(SRCDIR)/%.s
+	@$(ASM) $(AFLAGS) $< -o $@
+	@echo "Compiled "$<" successfully!"
 
 clean:
 	rm -rf $(C_OBJ)
