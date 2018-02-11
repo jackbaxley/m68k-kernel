@@ -38,9 +38,7 @@ SECTIONS{
 		*(.bss)
 		*(.stack)
 	} > REGION_BSS
-	
 	k_end = . ;
-	.filler : AT(0x40004000-1){
-		BYTE(0);
-	}
+	
+	
 }

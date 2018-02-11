@@ -5,7 +5,8 @@ ASM=m68k-elf-as
 AFLAGS=-m68030
 
 LD=m68k-elf-ld
-LFLAGS=-T ram.ld
+LFLAGS_RAM=-T ram.ld
+LFLAGS_BOOT=-T boot.ld
 
 SRCDIR = src
 OBJDIR = obj
@@ -27,9 +28,14 @@ ASM_SRC = $(wildcard $(SRCDIR)/*.s)\
 		$(wildcard $(SRCDIR)/driver/*.s)	
 ASM_OBJ = $(ASM_SRC:$(SRCDIR)/%.s=$(OBJDIR)/%.o)
 
-OUTPUT = kernel.bin
+OUTPUT_RAM = kernel.bin
+OUTPUT_BOOT = kern
 
-all: $(ASM_SRC) $(C_SRC) $(OUTPUT)
+ram: $(ASM_SRC) $(C_SRC) $(OUTPUT_RAM)
+
+boot: $(ASM_SRC) $(C_SRC) $(OUTPUT_BOOT)
+	e2cp $(OUTPUT_BOOT) ../fileserver/filesystem:/boot/
+
 
 init:
 	mkdir $(OBJDIR)
@@ -39,8 +45,12 @@ init:
 	mkdir $(OBJDIR)/lib
 	mkdir $(OBJDIR)/driver
 
-$(OUTPUT): $(C_OBJ) $(ASM_OBJ)
-	@$(LD) -o $(OUTPUT) $(LFLAGS) $(C_OBJ) $(ASM_OBJ)
+$(OUTPUT_RAM): $(C_OBJ) $(ASM_OBJ)
+	@$(LD) -o $(OUTPUT_RAM) $(LFLAGS_RAM) $(C_OBJ) $(ASM_OBJ)
+	@echo "Built "$<" successfully!"
+	
+$(OUTPUT_BOOT): $(C_OBJ) $(ASM_OBJ)
+	@$(LD) -o $(OUTPUT_BOOT) $(LFLAGS_BOOT) $(C_OBJ) $(ASM_OBJ)
 	@echo "Built "$<" successfully!"
 
 $(C_OBJ): $(OBJDIR)/%.o : $(SRCDIR)/%.c
@@ -54,4 +64,5 @@ $(ASM_OBJ): $(OBJDIR)/%.o : $(SRCDIR)/%.s
 clean:
 	rm -rf $(C_OBJ)
 	rm -rf $(ASM_OBJ)
-	rm -rf $(OUTPUT)
+	rm -rf $(OUTPUT_RAM)
+	rm -rf $(OUTPUT_BOOT)
