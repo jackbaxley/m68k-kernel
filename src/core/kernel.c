@@ -21,7 +21,6 @@ void kmain(){
 	printf("k_end %X\n",(uint32_t)&k_end);
 	printf("s_stack_end %X\n",(uint32_t)&s_stack_top);
 	printf("i_stack_end %X\n",(uint32_t)&i_stack_top);
-	printf("uint64_t length test %d!\n",(uint32_t)sizeof(uint64_t));
 	
 	load_small_process((void*)&prog1_start);
 	printf("Program Loaded\n");
