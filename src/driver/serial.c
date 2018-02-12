@@ -16,33 +16,37 @@
 
 #endif
 
-#ifdef NO_IRQ
 
-#define TX_BUFFER_SIZE 0
-#define RX_BUFFER_SIZE 0
-
-#else
-
-#define TX_BUFFER_SIZE 256
-#define RX_BUFFER_SIZE 256
-
-#endif
-
-#define MRA		(*((char*)0x80000000))
-#define SRA		(*((char*)0x80000001))
-#define CSRA 	(*((char*)0x80000001))
-#define BGR 	(*((char*)0x80000002))
-#define CRA 	(*((char*)0x80000002))
-#define RHRA	(*((char*)0x80000003))
-#define THRA 	(*((char*)0x80000003))
-#define IPCR 	(*((char*)0x80000004))
-#define ACR 	(*((char*)0x80000004))
-#define ISR 	(*((char*)0x80000005))
-#define IMR 	(*((char*)0x80000005))
-#define Dx6 	(*((char*)0x80000006))
-#define Dx7 	(*((char*)0x80000006))
-#define DxE 	(*((char*)0x8000000E))
-#define STCC 	(*((char*)0x8000000F))
+//68681 Duart Registers
+#define MRA		(*((char*)0x80000000)) //RW	Mode Register A
+#define SRA		(*((char*)0x80000001)) //R	Status Register A
+#define CSRA 	(*((char*)0x80000001)) //W	Clock Select Register A
+#define BGR 	(*((char*)0x80000002)) //R 	BRG Test
+#define CRA 	(*((char*)0x80000002)) //W	Command Register A
+#define RHRA	(*((char*)0x80000003)) //R	Rx Holding Register A
+#define THRA 	(*((char*)0x80000003)) //W	Tx Holding Register A
+#define IPCR 	(*((char*)0x80000004)) //R	Input Port Change Register
+#define ACR 	(*((char*)0x80000004)) //W	Aux. Control Register
+#define ISR 	(*((char*)0x80000005)) //R	Interrupt Status Register
+#define IMR 	(*((char*)0x80000005)) //W	Interrupt Mask Register
+#define CTU 	(*((char*)0x80000006)) //R	Counter/Timer Upper Value
+#define CRUR 	(*((char*)0x80000006)) //W	C/T Upper Preset Value
+#define CTL 	(*((char*)0x80000007)) //R	C/T Lower Value
+#define	CTLR 	(*((char*)0x80000007)) //W	C/T Lower Preset Value
+#define	MRB 	(*((char*)0x80000008)) //RW	Mode Register B
+#define	SRB 	(*((char*)0x80000009)) //R	Status Register B
+#define	CSRB 	(*((char*)0x80000009)) //W	Clock Select Register B
+#define	XTEST 	(*((char*)0x8000000A)) //R	1x/16x Test
+#define	CRB 	(*((char*)0x8000000A)) //W	Command Register B
+#define	RHRB 	(*((char*)0x8000000B)) //R	Rx Holding Register B
+#define	THRB 	(*((char*)0x8000000B)) //W	Tx Holding Register B
+#define	IVR 	(*((char*)0x8000000C)) //RW	Interrupt Vector Register
+#define	IP06 	(*((char*)0x8000000D)) //R	Input Ports IP0 to IP6
+#define	OPCR 	(*((char*)0x8000000D)) //W	Output Port Conf Register
+#define STACC 	(*((char*)0x8000000E)) //R	Start Counter Command
+#define SOPBC 	(*((char*)0x8000000E)) //W	Set Output Port Bits Command
+#define STOCC 	(*((char*)0x8000000F)) //R	Stop Counter Command
+#define ROPBC 	(*((char*)0x8000000F)) //W	Reset Output Port Bits Command
 
 
 
@@ -90,7 +94,7 @@ void serial_init(){
 	//enable interrrupts
 	
 	//IMR=IRQ_ON;
-	(*((char*)0x80000005))=IRQ_ON;
+	IMR=IRQ_ON;
 }
 
 int get_time(){
@@ -101,19 +105,19 @@ void serial_interrupt(){
 	
 	
 	
-	char isr=(*((char*)0x80000005));
+	char isr=ISR;
 	
 	
 	if(isr&0x08){
-		volatile char c = *((char*)0x8000000F);
+		volatile char c = STOCC;
 		time++;
 		
 	}
 	if(isr&0x02){//rx irq
 		//ubuf_put_c('R');
-		char c=*((char*)0x80000001);
+		char c=SRA;
 		while(c&0x01){
-			c=*((char*)0x80000003);
+			c=RHRA;
 			rx_buffer[rx_end]=c;
 			rx_end++;
 			if(rx_end>=RX_BUFFER_SIZE)rx_end-=RX_BUFFER_SIZE;//loop over
@@ -123,21 +127,21 @@ void serial_interrupt(){
 					
 				}
 			}
-			c=*((char*)0x80000001);
+			c=SRA;
 		}
 	}
 	if(isr&0x01){//tx irq
-		*((char*)0x80000005)=IRQ_OFF;//disable duart tx irq
+		IMR=IRQ_OFF;//disable duart tx irq
 		//ubuf_put_c('T');
-		while(((*((char*)0x80000001))&0x04) && tx_end != tx_begin){// while tx is rdy & buffer not empty
+		while((SRA&0x04) && tx_end != tx_begin){// while tx is rdy & buffer not empty
 			char c=tx_buffer[tx_begin];
 			tx_begin++;
 			if(tx_begin>=TX_BUFFER_SIZE)tx_begin-=TX_BUFFER_SIZE;//loop over
-			*((char*)0x80000003) = c;//send data
+			THRA = c;//send data
 			
 		}
 		if(tx_end != tx_begin)//if buffer not empty
-			*((char*)0x80000005)=IRQ_ON;//re enable duart tx irq
+			IMR=IRQ_ON;//re enable duart tx irq
 	}
 }
 
@@ -158,10 +162,10 @@ void serial_write_c(char c){
 	
 	//should i disable irq?
 	//asm("or.w #0x0700, %sr");
-	*((char*)0x80000005)=IRQ_OFF;
-	if(tx_end==tx_begin && (*((char*)0x80000001))&0x04 ){// if buf is emty & rdy to tx
+	IMR=IRQ_OFF;
+	if(tx_end==tx_begin && SRA&0x04 ){// if buf is emty & rdy to tx
 		//just send it straight to the duart
-		*((char*)0x80000003)=c;
+		THRA=c;
 		
 	}else{//otherwise put it in buffer
 		tx_buffer[tx_end]=c;
@@ -173,7 +177,7 @@ void serial_write_c(char c){
 		//	ubuf_put_s("TX_OVERFLOW");
 		//	while(1);
 		//}
-		*((char*)0x80000005)=IRQ_ON;//re enable duart tx irq
+		IMR=IRQ_ON;//re enable duart tx irq
 		//asm("and.w #0xF8FF, %sr");
 		while(tx_next == tx_begin){
 			asm("nop");
