@@ -37,6 +37,7 @@ boot: $(ASM_SRC) $(C_SRC) $(OUTPUT_BOOT)
 	e2cp $(OUTPUT_BOOT) ../fileserver/filesystem:/boot/
 
 
+
 init:
 	mkdir $(OBJDIR)
 	mkdir $(OBJDIR)/core
@@ -54,7 +55,7 @@ $(OUTPUT_BOOT): $(C_OBJ) $(ASM_OBJ)
 	@echo "Built "$<" successfully!"
 
 $(C_OBJ): $(OBJDIR)/%.o : $(SRCDIR)/%.c
-	@$(CC) $(CFLAGS) $< -o $@
+	@$(CC) $(CFLAGS) -D BUILDTIME='"$(shell  date +"%A %B %d %Y %r")"' $< -o $@
 	@echo "Compiled "$<" successfully!"
 
 $(ASM_OBJ): $(OBJDIR)/%.o : $(SRCDIR)/%.s

@@ -18,6 +18,7 @@ void kmain(){
 	init_processes();
 	printf("%d frames free\n",init_memory() );
 	printf("Kernel Started\n");
+	printf("Built: %s\n",BUILDTIME);
 	printf("k_end %X\n",(uint32_t)&k_end);
 	printf("s_stack_end %X\n",(uint32_t)&s_stack_top);
 	printf("i_stack_end %X\n",(uint32_t)&i_stack_top);
