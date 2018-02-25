@@ -18,8 +18,8 @@
 
 
 //68681 Duart Registers
-#define MRA		(*((char*)0x80000000)) //RW	Mode Register A
-#define SRA		(*((char*)0x80000001)) //R	Status Register A
+#define MRA	(*((char*)0x80000000)) //RW	Mode Register A
+#define SRA	(*((char*)0x80000001)) //R	Status Register A
 #define CSRA 	(*((char*)0x80000001)) //W	Clock Select Register A
 #define BGR 	(*((char*)0x80000002)) //R 	BRG Test
 #define CRA 	(*((char*)0x80000002)) //W	Command Register A
