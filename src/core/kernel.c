@@ -3,6 +3,7 @@
 #include "stdio.h"
 #include "memory.h"
 #include "process.h"
+#include "buildtime.h"
 
 extern char k_end;
 extern char s_stack_top;
@@ -14,11 +15,19 @@ extern char prog1_start;
 
 void kmain(){
 	serial_init();
-	serial_clear();
+	serial_interface* serial_interface_A = serial_get_interface('A');
+	//serial_interface* serial_interface_B = serial_get_interface('B');
+	serial_clear(serial_interface_A);
+	set_std_si(serial_interface_A);
+	#ifdef NO_IRQ
+		printf("Serial IRQ off.\n");
+	#else
+		printf("Serial IRQ on.\n");
+	#endif
 	init_processes();
 	printf("%d frames free\n",init_memory() );
 	printf("Kernel Started\n");
-	printf("Built: %s\n",BUILDTIME);
+	printf("Built: %s\n",get_buildtime());
 	printf("k_end %X\n",(uint32_t)&k_end);
 	printf("s_stack_end %X\n",(uint32_t)&s_stack_top);
 	printf("i_stack_end %X\n",(uint32_t)&i_stack_top);

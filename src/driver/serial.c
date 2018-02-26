@@ -18,8 +18,8 @@
 
 
 //68681 Duart Registers
-#define MRA	(*((char*)0x80000000)) //RW	Mode Register A
-#define SRA	(*((char*)0x80000001)) //R	Status Register A
+#define MRA		(*((char*)0x80000000)) //RW	Mode Register A
+#define SRA		(*((char*)0x80000001)) //R	Status Register A
 #define CSRA 	(*((char*)0x80000001)) //W	Clock Select Register A
 #define BGR 	(*((char*)0x80000002)) //R 	BRG Test
 #define CRA 	(*((char*)0x80000002)) //W	Command Register A
@@ -97,6 +97,18 @@ void serial_init(){
 	IMR=IRQ_ON;
 }
 
+volatile serial_interface* serial_get_interface(char id){
+	volatile serial_interface* ret;
+	//if(id=='A')ret=&si_A;
+	//else if(id=='B')ret=&si_B;
+	//else return NULL;
+	
+	//if(ret->used) return NULL;
+	
+	ret=NULL;
+	return ret;
+}
+
 int get_time(){
 	return time;
 }
@@ -145,11 +157,11 @@ void serial_interrupt(){
 	}
 }
 
-void serial_write_c(char c){
+void serial_write_c(volatile serial_interface* si,char c){
 	if(c=='\n'){
-		serial_write_c(0x1B);
+		serial_write_c(si,0x1B);
 		//serial_write_c('[');
-		serial_write_c('E');
+		serial_write_c(si,'E');
 		return;
 	}
 	
@@ -187,17 +199,17 @@ void serial_write_c(char c){
 	//asm("and.w #0xF8FF, %sr");
 }
 
-void serial_write_s(char *s){
+void serial_write_s(volatile serial_interface* si,char *s){
 	short i=0;
 	char c=s[i++];
 	while(c){
-		serial_write_c(c);
+		serial_write_c(si,c);
 		c=s[i++];
 	}
 	
 }
 
-char serial_get_c(){
+char serial_get_c(volatile serial_interface* si){
 	
 	#ifdef NO_IRQ
 	return ubuf_get_c();
@@ -217,7 +229,7 @@ char serial_get_c(){
 	return c;
 }
 
-char serial_check_c(){
+char serial_check_c(volatile serial_interface* si){
 	
 	#ifdef NO_IRQ
 	return ubuf_check_c();
@@ -236,7 +248,6 @@ char serial_check_c(){
 	return c;
 }
 
-void serial_clear(){
-	serial_write_s("\x1B[2J\x1B[;H");
+void serial_clear(volatile serial_interface* si){
+	serial_write_s(si,"\x1B[2J\x1B[;H");
 }
-

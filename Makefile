@@ -51,8 +51,10 @@ $(OUTPUT_RAM): $(C_OBJ) $(ASM_OBJ)
 	@echo "Built "$<" successfully!"
 	
 $(OUTPUT_BOOT): $(C_OBJ) $(ASM_OBJ)
+	@$(CC) $(CFLAGS) -D BUILDTIME='"$(shell  date +"%A %B %d %Y %r")"' src/core/buildtime.c -o obj/core/buildtime.o
+	@echo "Compiled "src/core/buildtime.c" successfully!"
 	@$(LD) -o $(OUTPUT_BOOT) $(LFLAGS_BOOT) $(C_OBJ) $(ASM_OBJ)
-	@echo "Built "$<" successfully!"
+	@echo "Built "$@" successfully!"
 
 $(C_OBJ): $(OBJDIR)/%.o : $(SRCDIR)/%.c
 	@$(CC) $(CFLAGS) -D BUILDTIME='"$(shell  date +"%A %B %d %Y %r")"' $< -o $@
