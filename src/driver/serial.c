@@ -1,7 +1,5 @@
 #include "serial.h"
 
-//#define NO_IRQ
-
 #ifdef NO_IRQ
 
 #define IRQ_ON 0x00
@@ -48,8 +46,13 @@
 #define STOCC 	(*((char*)0x8000000F)) //R	Stop Counter Command
 #define ROPBC 	(*((char*)0x8000000F)) //W	Reset Output Port Bits Command
 
+#define IRQ_RXA 0x02
+#define IRQ_TXA 0x01
+#define IRQ_RXB 0x20
+#define IRQ_TXB 0x10
 
 volatile serial_interface si_A;
+volatile serial_interface si_B;
 
 volatile int time;
 
@@ -67,6 +70,17 @@ void serial_init(){
 	si_A.tx_end=0;
 	si_A.rx_begin=0;
 	si_A.rx_end=0;
+	si_A.used=0;
+	si_A.id='A';
+	/*
+	si_B.tx_begin=0;
+	si_B.tx_end=0;
+	si_B.rx_begin=0;
+	si_B.rx_end=0;
+	si_B.used=0;
+	si_B.id='B';
+	*/
+	
 	time=0;
 	
 	//initilize timer
@@ -93,13 +107,12 @@ void serial_init(){
 
 volatile serial_interface* serial_get_interface(char id){
 	volatile serial_interface* ret;
-	//if(id=='A')ret=&si_A;
-	//else if(id=='B')ret=&si_B;
-	//else return NULL;
+	if(id=='A')ret=&si_A;
+	else if(id=='B')ret=&si_B;
+	else return NULL;
 	
-	//if(ret->used) return NULL;
-	
-	ret=NULL;
+	if(ret->used) return NULL;
+	ret->used=1;
 	return ret;
 }
 
@@ -119,8 +132,7 @@ void serial_interrupt(){
 		time++;
 		
 	}
-	if(isr&0x02){//rx irq
-		//ubuf_put_c('R');
+	if(isr&IRQ_RXA){//rx irq A
 		char c=SRA;
 		while(c&0x01){
 			c=RHRA;
@@ -136,9 +148,24 @@ void serial_interrupt(){
 			c=SRA;
 		}
 	}
-	if(isr&0x01){//tx irq
+	if(isr&IRQ_RXB){//rx irq B
+		char c=SRB;
+		while(c&0x01){
+			c=RHRB;
+			si_B.rx_buffer[si_B.rx_end]=c;
+			si_B.rx_end++;
+			if(si_B.rx_end>=RX_BUFFER_SIZE)si_B.rx_end-=RX_BUFFER_SIZE;//loop over
+			if(si_B.rx_end==si_B.rx_begin){//if overflow
+				//ubuf_put_s("RX_OVERFLOW");
+				while(1){
+					
+				}
+			}
+			c=SRB;
+		}
+	}
+	if(isr&IRQ_TXA){//tx irq A
 		IMR=IRQ_OFF;//disable duart tx irq
-		//ubuf_put_c('T');
 		while((SRA&0x04) && si_A.tx_end != si_A.tx_begin){// while tx is rdy & buffer not empty
 			char c=si_A.tx_buffer[si_A.tx_begin];
 			si_A.tx_begin++;
@@ -149,6 +176,20 @@ void serial_interrupt(){
 		if(si_A.tx_end != si_A.tx_begin)//if buffer not empty
 			IMR=IRQ_ON;//re enable duart tx irq
 	}
+	/*
+	if(isr&IRQ_TXB){//tx irq B
+		IMR=IRQ_OFF;//disable duart tx irq
+		while((SRB&0x04) && si_B.tx_end != si_B.tx_begin){// while tx is rdy & buffer not empty
+			char c=si_B.tx_buffer[si_B.tx_begin];
+			si_B.tx_begin++;
+			if(si_B.tx_begin>=TX_BUFFER_SIZE)si_B.tx_begin-=TX_BUFFER_SIZE;//loop over
+			THRB = c;//send data
+			
+		}
+		if(si_B.tx_end != si_B.tx_begin)//if buffer not empty
+			IMR=IRQ_ON;//re enable duart tx irq
+	}
+	*/
 }
 
 void serial_write_c(volatile serial_interface* si,char c){
@@ -169,15 +210,15 @@ void serial_write_c(volatile serial_interface* si,char c){
 	//should i disable irq?
 	//asm("or.w #0x0700, %sr");
 	IMR=IRQ_OFF;
-	if(si_A.tx_end==si_A.tx_begin && SRA&0x04 ){// if buf is emty & rdy to tx
+	if(si->tx_end==si->tx_begin && SRA&0x04 ){// if buf is emty & rdy to tx
 		//just send it straight to the duart
 		THRA=c;
 		
 	}else{//otherwise put it in buffer
-		si_A.tx_buffer[si_A.tx_end]=c;
-		si_A.tx_end++;
-		if(si_A.tx_end>=TX_BUFFER_SIZE)si_A.tx_end-=TX_BUFFER_SIZE;		
-		short tx_next=si_A.tx_end+1;
+		si->tx_buffer[si->tx_end]=c;
+		si->tx_end++;
+		if(si->tx_end>=TX_BUFFER_SIZE)si->tx_end-=TX_BUFFER_SIZE;		
+		short tx_next=si->tx_end+1;
 		if(tx_next>=TX_BUFFER_SIZE)tx_next-=TX_BUFFER_SIZE;
 		//if(tx_end==tx_begin){
 		//	ubuf_put_s("TX_OVERFLOW");
@@ -185,7 +226,7 @@ void serial_write_c(volatile serial_interface* si,char c){
 		//}
 		IMR=IRQ_ON;//re enable duart tx irq
 		//asm("and.w #0xF8FF, %sr");
-		while(tx_next == si_A.tx_begin){
+		while(tx_next == si->tx_begin){
 			asm("nop");
 		}
 		
@@ -211,14 +252,14 @@ char serial_get_c(volatile serial_interface* si){
 	
 	//asm("or.w #0x0700, %sr");
 	char c;
-	while(si_A.rx_end==si_A.rx_begin){
+	while(si->rx_end==si->rx_begin){
 		asm(
 			"stop #0x3000"
 		);
 	}
-	c=si_A.rx_buffer[si_A.rx_begin];
-	si_A.rx_begin++;
-	if(si_A.rx_begin>=RX_BUFFER_SIZE)si_A.rx_begin-=RX_BUFFER_SIZE;
+	c=si->rx_buffer[si_A.rx_begin];
+	si->rx_begin++;
+	if(si->rx_begin>=RX_BUFFER_SIZE)si->rx_begin-=RX_BUFFER_SIZE;
 	//asm("and.w #0xF8FF, %sr");
 	return c;
 }
@@ -231,13 +272,13 @@ char serial_check_c(volatile serial_interface* si){
 	
 	//asm("or.w #0x0700, %sr");
 	char c;
-	if(si_A.rx_end==si_A.rx_begin){
+	if(si->rx_end==si->rx_begin){
 		//asm("and.w #0xF8FF, %sr");
 		return 0;
 	}
-	c=si_A.rx_buffer[si_A.rx_begin];
-	si_A.rx_begin++;
-	if(si_A.rx_begin>=RX_BUFFER_SIZE)si_A.rx_begin-=RX_BUFFER_SIZE;
+	c=si->rx_buffer[si->rx_begin];
+	si->rx_begin++;
+	if(si->rx_begin>=RX_BUFFER_SIZE)si->rx_begin-=RX_BUFFER_SIZE;
 	//asm("and.w #0xF8FF, %sr");
 	return c;
 }

@@ -19,6 +19,19 @@ void kmain(){
 	//serial_interface* serial_interface_B = serial_get_interface('B');
 	serial_clear(serial_interface_A);
 	set_std_si(serial_interface_A);
+	
+	char c;
+	if(serial_interface_A!=0){
+		
+		c=(*serial_interface_A).id;
+
+
+		printf("Got serial interface id: %c\n",c);
+	}else{
+		printf("Could not get serial interface\n");
+	}
+	
+	
 	#ifdef NO_IRQ
 		printf("Serial IRQ off.\n");
 	#else
@@ -26,6 +39,7 @@ void kmain(){
 	#endif
 	init_processes();
 	printf("%d frames free\n",init_memory() );
+
 	printf("Kernel Started\n");
 	printf("Built: %s\n",get_buildtime());
 	printf("k_end %X\n",(uint32_t)&k_end);

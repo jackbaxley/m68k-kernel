@@ -35,6 +35,7 @@ ram: $(ASM_SRC) $(C_SRC) $(OUTPUT_RAM)
 
 boot: $(ASM_SRC) $(C_SRC) $(OUTPUT_BOOT)
 	e2cp $(OUTPUT_BOOT) ../fileserver/filesystem:/boot/
+	e2ls ../fileserver/filesystem:/boot/kern -l
 
 
 
