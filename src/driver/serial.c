@@ -55,7 +55,24 @@ volatile serial_interface si_A;
 volatile serial_interface si_B;
 
 volatile int time;
+volatile char IMR_state;
 
+void set_IMR_flag(char flag){
+	IMR_state |= flag;
+	IMR=IMR_state;
+}
+void reset_IMR_flag(char flag){
+	IMR_state &= ~flag;
+	IMR=IMR_state;
+} 
+
+void clear_IMR(){
+	IMR=0x00;
+}
+
+void restore_IMR(){
+	IMR=IMR_state;
+}
 
 void flush_rx(){
 	si_A.rx_begin=si_A.rx_end;
@@ -63,7 +80,7 @@ void flush_rx(){
 
 
 void serial_init(){
-	
+	IMR_state=0;
 	
 	
 	si_A.tx_begin=0;
@@ -72,14 +89,14 @@ void serial_init(){
 	si_A.rx_end=0;
 	si_A.used=0;
 	si_A.id='A';
-	/*
+	
 	si_B.tx_begin=0;
 	si_B.tx_end=0;
 	si_B.rx_begin=0;
 	si_B.rx_end=0;
 	si_B.used=0;
 	si_B.id='B';
-	*/
+	
 	
 	time=0;
 	
@@ -102,7 +119,7 @@ void serial_init(){
 	//enable interrrupts
 	
 	//IMR=IRQ_ON;
-	IMR=IRQ_ON;
+	set_IMR_flag(IRQ_ON);
 }
 
 volatile serial_interface* serial_get_interface(char id){
@@ -165,7 +182,7 @@ void serial_interrupt(){
 		}
 	}
 	if(isr&IRQ_TXA){//tx irq A
-		IMR=IRQ_OFF;//disable duart tx irq
+		reset_IMR_flag(IRQ_TXA);//disable duart tx irq
 		while((SRA&0x04) && si_A.tx_end != si_A.tx_begin){// while tx is rdy & buffer not empty
 			char c=si_A.tx_buffer[si_A.tx_begin];
 			si_A.tx_begin++;
@@ -174,11 +191,11 @@ void serial_interrupt(){
 			
 		}
 		if(si_A.tx_end != si_A.tx_begin)//if buffer not empty
-			IMR=IRQ_ON;//re enable duart tx irq
+			set_IMR_flag(IRQ_TXA);//re enable duart tx irq
 	}
-	/*
+	
 	if(isr&IRQ_TXB){//tx irq B
-		IMR=IRQ_OFF;//disable duart tx irq
+		reset_IMR_flag(IRQ_TXB);//disable duart tx irq
 		while((SRB&0x04) && si_B.tx_end != si_B.tx_begin){// while tx is rdy & buffer not empty
 			char c=si_B.tx_buffer[si_B.tx_begin];
 			si_B.tx_begin++;
@@ -187,9 +204,9 @@ void serial_interrupt(){
 			
 		}
 		if(si_B.tx_end != si_B.tx_begin)//if buffer not empty
-			IMR=IRQ_ON;//re enable duart tx irq
+			set_IMR_flag(IRQ_TXB);//re enable duart tx irq
 	}
-	*/
+	
 }
 
 void serial_write_c(volatile serial_interface* si,char c){
