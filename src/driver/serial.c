@@ -1,17 +1,9 @@
 #include "serial.h"
 
 #ifdef NO_IRQ
-
-#define IRQ_ON 0x00
-#define IRQ_OFF 0x00
-
+	#define IRQ_ON 0x00
 #else
-
-//#define IRQ_ON 0x0B
-#define IRQ_ON 0x03
-//#define IRQ_OFF 0x0A
-#define IRQ_OFF 0x02
-
+	#define IRQ_ON 0x33
 #endif
 
 
@@ -74,8 +66,8 @@ void restore_IMR(){
 	IMR=IMR_state;
 }
 
-void flush_rx(){
-	si_A.rx_begin=si_A.rx_end;
+void flush_rx(volatile serial_interface* si){
+	si->rx_begin=si->rx_end;
 }
 
 
@@ -226,10 +218,25 @@ void serial_write_c(volatile serial_interface* si,char c){
 	
 	//should i disable irq?
 	//asm("or.w #0x0700, %sr");
-	IMR=IRQ_OFF;
-	if(si->tx_end==si->tx_begin && SRA&0x04 ){// if buf is emty & rdy to tx
+	
+	char* thr;//pointer to tx holding register
+	char sr;//contents of channels status register
+	char irq_flag;//flag of transmit irq
+	
+	if(si->id=='A'){
+		thr=&THRA;
+		sr=SRA;
+		irq_flag=IRQ_TXA;
+	}else if(si->id=='B'){
+		thr=&THRB;
+		sr=SRB;
+		irq_flag=IRQ_TXB;
+	}
+	
+	reset_IMR_flag(irq_flag);
+	if(si->tx_end==si->tx_begin && sr&0x04 ){// if buf is emty & rdy to tx
 		//just send it straight to the duart
-		THRA=c;
+		*thr=c;
 		
 	}else{//otherwise put it in buffer
 		si->tx_buffer[si->tx_end]=c;
@@ -241,7 +248,7 @@ void serial_write_c(volatile serial_interface* si,char c){
 		//	ubuf_put_s("TX_OVERFLOW");
 		//	while(1);
 		//}
-		IMR=IRQ_ON;//re enable duart tx irq
+		set_IMR_flag(irq_flag);//re enable duart tx irq
 		//asm("and.w #0xF8FF, %sr");
 		while(tx_next == si->tx_begin){
 			asm("nop");
@@ -274,7 +281,7 @@ char serial_get_c(volatile serial_interface* si){
 			"stop #0x3000"
 		);
 	}
-	c=si->rx_buffer[si_A.rx_begin];
+	c=si->rx_buffer[si->rx_begin];
 	si->rx_begin++;
 	if(si->rx_begin>=RX_BUFFER_SIZE)si->rx_begin-=RX_BUFFER_SIZE;
 	//asm("and.w #0xF8FF, %sr");
