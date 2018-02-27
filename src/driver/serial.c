@@ -38,6 +38,7 @@
 #define STOCC 	(*((char*)0x8000000F)) //R	Stop Counter Command
 #define ROPBC 	(*((char*)0x8000000F)) //W	Reset Output Port Bits Command
 
+//68681 IRQ Flags used both for irq status and irq mask
 #define IRQ_RXA 0x02
 #define IRQ_TXA 0x01
 #define IRQ_RXB 0x20
@@ -73,8 +74,7 @@ void flush_rx(volatile serial_interface* si){
 
 void serial_init(){
 	IMR_state=0;
-	
-	
+
 	si_A.tx_begin=0;
 	si_A.tx_end=0;
 	si_A.rx_begin=0;
@@ -92,25 +92,7 @@ void serial_init(){
 	
 	time=0;
 	
-	//initilize timer
-	/*
-	IMR = 0x00;
-	Dx6 = 0x0F;
-	Dx7 = 0xFF;
-	ACR = 0x70;
-	char c=DxE;
-	*/
-	
-	/*
-	(*((char*)0x80000005)) = 0x00;
-	(*((char*)0x80000006)) = 0x0F;
-	(*((char*)0x80000007)) = 0xFF;
-	(*((char*)0x80000004)) = 0x70;
-	char c=(*((char*)0x8000000E));
-	*/
-	//enable interrrupts
-	
-	//IMR=IRQ_ON;
+	//Turn in IRQ
 	set_IMR_flag(IRQ_ON);
 }
 
@@ -130,11 +112,8 @@ int get_time(){
 }
 
 void serial_interrupt(){
-	
-	
-	
+
 	char isr=ISR;
-	
 	
 	if(isr&0x08){
 		volatile char c = STOCC;
@@ -149,7 +128,6 @@ void serial_interrupt(){
 			si_A.rx_end++;
 			if(si_A.rx_end>=RX_BUFFER_SIZE)si_A.rx_end-=RX_BUFFER_SIZE;//loop over
 			if(si_A.rx_end==si_A.rx_begin){//if overflow
-				//ubuf_put_s("RX_OVERFLOW");
 				while(1){
 					
 				}
@@ -165,7 +143,6 @@ void serial_interrupt(){
 			si_B.rx_end++;
 			if(si_B.rx_end>=RX_BUFFER_SIZE)si_B.rx_end-=RX_BUFFER_SIZE;//loop over
 			if(si_B.rx_end==si_B.rx_begin){//if overflow
-				//ubuf_put_s("RX_OVERFLOW");
 				while(1){
 					
 				}
@@ -204,20 +181,14 @@ void serial_interrupt(){
 void serial_write_c(volatile serial_interface* si,char c){
 	if(c=='\n'){
 		serial_write_c(si,0x1B);
-		//serial_write_c('[');
 		serial_write_c(si,'E');
 		return;
 	}
-	
-	
+		
 	#ifdef NO_IRQ
 	ubuf_put_c(c);
 	return;
 	#endif
-	
-	
-	//should i disable irq?
-	//asm("or.w #0x0700, %sr");
 	
 	char* thr;//pointer to tx holding register
 	char sr;//contents of channels status register
@@ -249,13 +220,11 @@ void serial_write_c(volatile serial_interface* si,char c){
 		//	while(1);
 		//}
 		set_IMR_flag(irq_flag);//re enable duart tx irq
-		//asm("and.w #0xF8FF, %sr");
 		while(tx_next == si->tx_begin){
 			asm("nop");
 		}
 		
 	}
-	//asm("and.w #0xF8FF, %sr");
 }
 
 void serial_write_s(volatile serial_interface* si,char *s){
@@ -274,17 +243,16 @@ char serial_get_c(volatile serial_interface* si){
 	return ubuf_get_c();
 	#endif
 	
-	//asm("or.w #0x0700, %sr");
 	char c;
 	while(si->rx_end==si->rx_begin){
 		asm(
-			"stop #0x3000"
+			"stop #0x3000" // waits for and interrupt
 		);
 	}
 	c=si->rx_buffer[si->rx_begin];
 	si->rx_begin++;
 	if(si->rx_begin>=RX_BUFFER_SIZE)si->rx_begin-=RX_BUFFER_SIZE;
-	//asm("and.w #0xF8FF, %sr");
+
 	return c;
 }
 
@@ -294,16 +262,13 @@ char serial_check_c(volatile serial_interface* si){
 	return ubuf_check_c();
 	#endif
 	
-	//asm("or.w #0x0700, %sr");
 	char c;
 	if(si->rx_end==si->rx_begin){
-		//asm("and.w #0xF8FF, %sr");
 		return 0;
 	}
 	c=si->rx_buffer[si->rx_begin];
 	si->rx_begin++;
 	if(si->rx_begin>=RX_BUFFER_SIZE)si->rx_begin-=RX_BUFFER_SIZE;
-	//asm("and.w #0xF8FF, %sr");
 	return c;
 }
 

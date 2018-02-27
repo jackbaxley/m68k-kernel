@@ -15,22 +15,20 @@ extern char prog1_start;
 
 void kmain(){
 	serial_init();
-	serial_interface* serial_interface_A = serial_get_interface('A');
-	//serial_interface* serial_interface_B = serial_get_interface('B');
+	volatile serial_interface* serial_interface_A = serial_get_interface('A');
+	volatile serial_interface* serial_interface_B = serial_get_interface('B');
 	serial_clear(serial_interface_A);
 	set_std_si(serial_interface_A);
-	
-	char c;
 	if(serial_interface_A!=0){
-		
-		c=(*serial_interface_A).id;
-
-
-		printf("Got serial interface id: %c\n",c);
+		printf("Got serial interface id: %c\n",serial_interface_A->id);
 	}else{
-		printf("Could not get serial interface\n");
+		printf("Could not get serial interface A\n");
 	}
-	
+	if(serial_interface_B!=0){
+		printf("Got serial interface id: %c\n",serial_interface_B->id);
+	}else{
+		printf("Could not get serial interface B\n");
+	}
 	
 	#ifdef NO_IRQ
 		printf("Serial IRQ off.\n");
