@@ -4,6 +4,9 @@
 #include "memory.h"
 #include "process.h"
 #include "buildtime.h"
+#include "fs.h"
+#include "ext2.h"
+#include "fileserver.h"
 
 extern char k_end;
 extern char s_stack_top;
@@ -13,10 +16,29 @@ extern char prog1_start;
 
 
 
+
+
+void init_fileserver(){// hardware dependent
+	volatile serial_interface* serial_interface_B = serial_get_interface('B');
+	if(serial_interface_B!=0){
+		printf("Got serial interface id: %c\n",serial_interface_B->id);
+	}else{
+		printf("Could not get serial interface B\n");
+	}
+	static fs_node_t serial_node, fileserver_node;
+	serial_create_node(serial_interface_B,&serial_node);
+	fileserver_create_node(&serial_node,&fileserver_node);
+	static ext2_system_t filesystem;
+
+	ext2_make_system(&filesystem,&fileserver_node);
+	ext2_read_superblock(&filesystem);
+	
+	
+}
+
 void kmain(){
 	serial_init();
 	volatile serial_interface* serial_interface_A = serial_get_interface('A');
-	volatile serial_interface* serial_interface_B = serial_get_interface('B');
 	serial_clear(serial_interface_A);
 	set_std_si(serial_interface_A);
 	if(serial_interface_A!=0){
@@ -24,11 +46,8 @@ void kmain(){
 	}else{
 		printf("Could not get serial interface A\n");
 	}
-	if(serial_interface_B!=0){
-		printf("Got serial interface id: %c\n",serial_interface_B->id);
-	}else{
-		printf("Could not get serial interface B\n");
-	}
+	
+	init_fileserver();
 	
 	#ifdef NO_IRQ
 		printf("Serial IRQ off.\n");

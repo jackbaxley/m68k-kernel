@@ -8,9 +8,11 @@
 void fileserver_read_sector(fs_node_t* dev, uint32_t sec, uint8_t* buffer){
 	
 	uint8_t cmd;
+	uint8_t sec_n[4];
+	writelendian32(sec,sec_n);
 	cmd=FILESERVER_CMD_SEEK;
 	dev->write(dev, 0, sizeof(cmd), &cmd);
-	dev->write(dev, 0, sizeof(sec), (uint8_t*)&sec);
+	dev->write(dev, 0, sizeof(sec_n), (uint8_t*)&sec_n);
 	cmd=FILESERVER_CMD_READ;
 	dev->write(dev, 0, sizeof(cmd), &cmd);
 	dev->read(dev, 0, FILESERVER_SECTOR_SIZE, buffer);
@@ -19,9 +21,11 @@ void fileserver_read_sector(fs_node_t* dev, uint32_t sec, uint8_t* buffer){
 void fileserver_write_sector(fs_node_t* dev, uint32_t sec, uint8_t* buffer){
 	
 	uint8_t cmd;
+	uint8_t sec_n[4];
+	writelendian32(sec,sec_n);
 	cmd=FILESERVER_CMD_SEEK;
 	dev->write(dev, 0, sizeof(cmd), &cmd);
-	dev->write(dev, 0, sizeof(sec), (uint8_t*)&sec);
+	dev->write(dev, 0, sizeof(sec_n), (uint8_t*)&sec_n);
 	cmd=FILESERVER_CMD_WRITE;
 	dev->write(dev, 0, sizeof(cmd), &cmd);
 	dev->write(dev, 0, FILESERVER_SECTOR_SIZE, buffer);

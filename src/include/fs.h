@@ -6,8 +6,9 @@
 
 struct fs_node;
 
-typedef uint32_t (*read_t)(struct fs_node *, uint32_t, uint32_t, uint8_t);
-typedef uint32_t (*write_t)(struct fs_node *, uint32_t, uint32_t, uint8_t);
+//							fs_node, 		  offset,	size,	  buffer
+typedef uint32_t (*read_t) (struct fs_node *, uint32_t, uint32_t, uint8_t*);
+typedef uint32_t (*write_t)(struct fs_node *, uint32_t, uint32_t, uint8_t*);
 typedef void* device_t;
 
 

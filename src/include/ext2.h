@@ -5,7 +5,7 @@
 #include "fs.h"
 
 typedef struct ext2_superblock{
-	uint32_t s_indoes_count;
+	uint32_t s_inodes_count;
 	uint32_t s_blocks_count;
 	uint32_t s_r_blocks_count;
 	uint32_t s_free_blocks_count;
@@ -38,12 +38,13 @@ typedef struct ext2_superblock{
 
 typedef struct ext2_system{
 	ext2_superblock_t superblock;
-	*fs_node_t device;
+	fs_node_t* device;
 	
 	
 } ext2_system_t;
 
-void ext2_read_superblock(*ext_system_t);
+void ext2_read_superblock(ext2_system_t* filesystem);
+void ext2_make_system(ext2_system_t* filesystem, fs_node_t* device);
 
 
 	
