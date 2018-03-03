@@ -2,6 +2,7 @@
 #define __fileserver_h
 
 #include "mydefs.h"
+#include "fs.h"
 
 #define FILESERVER_SECTOR_SIZE 512
 
@@ -25,5 +26,6 @@ typedef struct fileserver_device{
 
 void fileserver_write_sector(fileserver_device_t* dev, uint32_t sec, uint8_t* buffer);
 void fileserver_read_sector(fileserver_device_t* dev, uint32_t sec, uint8_t* buffer);
+void fileserver_create_node(fileserver_device_t* dev, fs_node_t* node);
 
 #endif
