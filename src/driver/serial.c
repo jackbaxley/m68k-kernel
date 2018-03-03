@@ -116,7 +116,8 @@ void serial_interrupt(){
 	char isr=ISR;
 	
 	if(isr&0x08){
-		volatile char c = STOCC;
+
+		(void)STOCC;//read from STOCC to (reset timer?)
 		time++;
 		
 	}

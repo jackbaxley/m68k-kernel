@@ -1,4 +1,5 @@
 #include "fileserver.h"
+#include "stdlib.h"
 
 #define FILESERVER_CMD_SEEK 1
 #define FILESERVER_CMD_READ 2
