@@ -275,3 +275,23 @@ char serial_check_c(volatile serial_interface* si){
 void serial_clear(volatile serial_interface* si){
 	serial_write_s(si,"\x1B[2J\x1B[;H");
 }
+
+
+uint32_t serial_write(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer){
+	
+	for(int i=0;i<size;i++){
+		serial_write_c((serial_interface*)node->device,buffer[i]);
+	}
+	return size;
+}
+uint32_t serial_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer){
+	for(int i=0;i<size;i++){
+		buffer[i]=serial_get_c((serial_interface*)node->device);
+	}
+	return size;
+}
+void serial_create_node(serial_interface* si, fs_node_t* node){
+	node->device=(device_t)si;
+	node->read=(read_t)serial_read;
+	node->write=(write_t)serial_write;
+}

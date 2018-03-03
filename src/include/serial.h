@@ -2,6 +2,7 @@
 #define __serial_h
 
 #include "cdefs.h"
+#include "fs.h"
 
 //#define NO_IRQ
 
@@ -39,6 +40,10 @@ void serial_write_s(volatile serial_interface* si,char *s);
 void serial_init();
 int get_time();
 volatile serial_interface* serial_get_interface(char id);
+
+uint32_t serial_write(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
+uint32_t serial_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
+void serial_create_node(serial_interface* si, fs_node_t* node);
 
 
 #endif
