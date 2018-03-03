@@ -17,7 +17,8 @@ C_SRC = $(wildcard $(SRCDIR)/*.c)\
 		$(wildcard $(SRCDIR)/memory/*.c)\
 		$(wildcard $(SRCDIR)/process/*.c)\
 		$(wildcard $(SRCDIR)/lib/*.c)\
-		$(wildcard $(SRCDIR)/driver/*.c)
+		$(wildcard $(SRCDIR)/driver/*.c)\
+		$(wildcard $(SRCDIR)/fs/*.c)
 C_OBJ = $(C_SRC:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
 
 ASM_SRC = $(wildcard $(SRCDIR)/*.s)\
