@@ -19,7 +19,7 @@ extern char prog1_start;
 
 
 void init_fileserver(){// hardware dependent
-	volatile serial_interface* serial_interface_B = serial_get_interface('B');
+	serial_interface* serial_interface_B = serial_get_interface('B');
 	if(serial_interface_B!=0){
 		printf("Got serial interface id: %c\n",serial_interface_B->id);
 	}else{
@@ -38,7 +38,7 @@ void init_fileserver(){// hardware dependent
 
 void kmain(){
 	serial_init();
-	volatile serial_interface* serial_interface_A = serial_get_interface('A');
+	serial_interface* serial_interface_A = serial_get_interface('A');
 	serial_clear(serial_interface_A);
 	set_std_si(serial_interface_A);
 	if(serial_interface_A!=0){

@@ -20,26 +20,26 @@
 
 typedef struct{
 	
-    char rx_buffer[RX_BUFFER_SIZE];
-    char tx_buffer[TX_BUFFER_SIZE];
-    short tx_begin;
-    short tx_end;
-    short rx_begin;
-    short rx_end;
+    volatile char rx_buffer[RX_BUFFER_SIZE];
+    volatile char tx_buffer[TX_BUFFER_SIZE];
+    volatile short tx_begin;
+    volatile short tx_end;
+    volatile short rx_begin;
+    volatile short rx_end;
 	
 	char id;
 	char used;
 	
 } serial_interface;
 
-void serial_clear(volatile serial_interface* si);
-char serial_get_c(volatile serial_interface* si);
-char serial_check_c(volatile serial_interface* si);
-void serial_write_c(volatile serial_interface* si,char c);
-void serial_write_s(volatile serial_interface* si,char *s);
+void serial_clear(serial_interface* si);
+char serial_get_c(serial_interface* si);
+char serial_check_c(serial_interface* si);
+void serial_write_c(serial_interface* si,char c);
+void serial_write_s(serial_interface* si,char *s);
 void serial_init();
 int get_time();
-volatile serial_interface* serial_get_interface(char id);
+serial_interface* serial_get_interface(char id);
 
 uint32_t serial_write(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);
 uint32_t serial_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer);

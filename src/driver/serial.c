@@ -44,8 +44,8 @@
 #define IRQ_RXB 0x20
 #define IRQ_TXB 0x10
 
-volatile serial_interface si_A;
-volatile serial_interface si_B;
+serial_interface si_A;
+serial_interface si_B;
 
 volatile int time;
 volatile char IMR_state;
@@ -67,7 +67,7 @@ void restore_IMR(){
 	IMR=IMR_state;
 }
 
-void flush_rx(volatile serial_interface* si){
+void flush_rx(serial_interface* si){
 	si->rx_begin=si->rx_end;
 }
 
@@ -96,8 +96,8 @@ void serial_init(){
 	set_IMR_flag(IRQ_ON);
 }
 
-volatile serial_interface* serial_get_interface(char id){
-	volatile serial_interface* ret;
+serial_interface* serial_get_interface(char id){
+	serial_interface* ret;
 	if(id=='A')ret=&si_A;
 	else if(id=='B')ret=&si_B;
 	else return NULL;
@@ -178,7 +178,7 @@ void serial_interrupt(){
 	
 }
 
-void serial_write_c(volatile serial_interface* si,char c){
+void serial_write_c(serial_interface* si,char c){
 	if(c=='\n'){
 		serial_write_c(si,0x1B);
 		serial_write_c(si,'E');
@@ -227,7 +227,7 @@ void serial_write_c(volatile serial_interface* si,char c){
 	}
 }
 
-void serial_write_s(volatile serial_interface* si,char *s){
+void serial_write_s(serial_interface* si,char *s){
 	short i=0;
 	char c=s[i++];
 	while(c){
@@ -237,7 +237,7 @@ void serial_write_s(volatile serial_interface* si,char *s){
 	
 }
 
-char serial_get_c(volatile serial_interface* si){
+char serial_get_c(serial_interface* si){
 	
 	#ifdef NO_IRQ
 	return ubuf_get_c();
@@ -256,7 +256,7 @@ char serial_get_c(volatile serial_interface* si){
 	return c;
 }
 
-char serial_check_c(volatile serial_interface* si){
+char serial_check_c(serial_interface* si){
 	
 	#ifdef NO_IRQ
 	return ubuf_check_c();
@@ -272,7 +272,7 @@ char serial_check_c(volatile serial_interface* si){
 	return c;
 }
 
-void serial_clear(volatile serial_interface* si){
+void serial_clear(serial_interface* si){
 	serial_write_s(si,"\x1B[2J\x1B[;H");
 }
 
