@@ -180,7 +180,7 @@ void serial_interrupt(){
 }
 
 void serial_write_c(serial_interface* si,char c){
-	if(c=='\n'){
+	if(c=='\n' && si->id=='A'){
 		serial_write_c(si,0x1B);
 		serial_write_c(si,'E');
 		return;
@@ -191,9 +191,9 @@ void serial_write_c(serial_interface* si,char c){
 	return;
 	#endif
 	
-	char* thr;//pointer to tx holding register
-	char sr;//contents of channels status register
-	char irq_flag;//flag of transmit irq
+	char* thr=NULL;//pointer to tx holding register
+	char sr=0;//contents of channels status register
+	char irq_flag=0;//flag of transmit irq
 	
 	if(si->id=='A'){
 		thr=&THRA;
@@ -203,14 +203,18 @@ void serial_write_c(serial_interface* si,char c){
 		thr=&THRB;
 		sr=SRB;
 		irq_flag=IRQ_TXB;
+	}else{
+		return;
 	}
-	
+		
 	reset_IMR_flag(irq_flag);
 	if(si->tx_end==si->tx_begin && sr&0x04 ){// if buf is emty & rdy to tx
 		//just send it straight to the duart
-		*thr=c;
+		*thr=c;		
 		
 	}else{//otherwise put it in buffer
+		
+		
 		si->tx_buffer[si->tx_end]=c;
 		si->tx_end++;
 		if(si->tx_end>=TX_BUFFER_SIZE)si->tx_end-=TX_BUFFER_SIZE;		
@@ -226,6 +230,7 @@ void serial_write_c(serial_interface* si,char c){
 		}
 		
 	}
+	
 }
 
 void serial_write_s(serial_interface* si,char *s){

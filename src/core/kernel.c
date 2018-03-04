@@ -33,6 +33,7 @@ void init_fileserver(){// hardware dependent
 	ext2_make_system(&filesystem,&fileserver_node);
 	ext2_read_superblock(&filesystem);
 	
+	ext2_mount_root(&filesystem,fs_root_node());
 	
 }
 
