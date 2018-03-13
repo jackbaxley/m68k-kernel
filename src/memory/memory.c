@@ -1,4 +1,5 @@
 #include "memory.h"
+#include "stdio.h"
 
 //fix for MORERAM , replace 16 bits with 32 for more than 64k frames
 
@@ -125,11 +126,12 @@ void init_malloc(){
 		malloc_frames[i]=0;
 		malloc_frames_free_size[i]=0;
 	}
+	malloc_n_frames=0;
 }
 
 // regenerates bit-mask of free sizes
 void malloc_regen_free_size(fid_t frame){
-	uint8_t* f_ptr=frame_addr(frame);
+	uint8_t* f_ptr=frame_addr(malloc_frames[frame]);
 	
 	uint8_t mask=0;
 	//local pointer
@@ -139,18 +141,28 @@ void malloc_regen_free_size(fid_t frame){
 	while(search){
 		uint8_t cur_chunk_size=((f_ptr[l_ptr])&0x07);
 		
-		mask|=(1<<cur_chunk_size);
+		printf("offset %d\n",l_ptr);
+		printf("cur_chunk_size=%d, indicating size of %d\n",cur_chunk_size,(32<<cur_chunk_size));
+		if( !( (f_ptr[l_ptr])&0x80 ) ){//if chunk is free
+			mask|=(1<<cur_chunk_size);
+		}
 		
 		//increment local pointer to next chunk
 		l_ptr+=(32<<cur_chunk_size);
 		
-		if(l_ptr>=4096){
+		if(l_ptr>4096){
 			//error this shouldnt happen
+			printf("malloc error,l_ptr=%d %s:%d\n",l_ptr,__FILE__,__LINE__);
 			return;
-		}		
+		}
+		if(l_ptr==4096){
+			search=0;
+			break;
+		}
 	}
 	
-	malloc_frames_free_size[frame]=mask;	
+	malloc_frames_free_size[frame]=mask;
+	printf("Free Sizes Mask: %X\n",mask);
 }
 
 /*
@@ -167,6 +179,9 @@ void* malloc(uint32_t size){
 	if(size>MALLOC_MAX)
 		return NULL;
 	uint8_t log_size=malloc_log_size(size);
+	
+	//searches for a "match frame", a frame that has space for
+	//the new allocation
 	int match_frame;
 	int match_log_size;
 	int match_found=0;
@@ -192,15 +207,16 @@ void* malloc(uint32_t size){
 	//if theres no existing page that this allocation will fit in,
 	//allocate a new page
 	if(!match_found){
+		printf("No Match, allocated new frame\n");
 		match_frame=malloc_n_frames++;
 		match_log_size=7;
 		malloc_frames[match_frame]=get_frame();
 		malloc_frames_free_size[match_frame]=(1<<7);
-		f_ptr=frame_addr(match_frame);
+		f_ptr=frame_addr(malloc_frames[match_frame]);
 		*f_ptr=0x07;//unallocated full page chunk
 		
 	}else{
-		f_ptr=frame_addr(match_frame);
+		f_ptr=frame_addr(malloc_frames[match_frame]);
 	}
 
 	//local pointer
@@ -210,6 +226,8 @@ void* malloc(uint32_t size){
 	
 	while(search){
 		uint8_t cur_chunk_size=((f_ptr[l_ptr])&0x07);
+		
+		printf("search chunk size %d, match size %d, cur meta byte %X\n",cur_chunk_size,match_log_size,f_ptr[l_ptr]);
 		//if the current chunk is the desired chunk
 		if( !((f_ptr[l_ptr])&0x80) && cur_chunk_size==match_log_size){
 			search=0;
@@ -220,9 +238,12 @@ void* malloc(uint32_t size){
 		
 		if(l_ptr>=4096){
 			//error this shouldnt happen
+			printf("malloc \x1B[35mERROR\x1B[0m %s:%d\n",__FILE__,__LINE__);
 			return NULL;
 		}		
 	}
+	
+	printf("log_size%d\n",log_size);
 	
 	//now that we have the match chunk, if the match chunk is too big
 	//we have to divide the chunk to the correct size
@@ -230,10 +251,11 @@ void* malloc(uint32_t size){
 	for(uint8_t i=match_log_size;i>log_size;i--){
 		
 		//split the chunk in half by creating the higher chunk
-		f_ptr[l_ptr+(32<<(i-1))]=i; 
+		f_ptr[l_ptr+(32<<(i-1))]=i-1; 
 			
 	}
-	f_ptr[l_ptr]=(uint8_t)log_size;
+	//0x80 marks that this chunk is not free
+	f_ptr[l_ptr]=0x80|(uint8_t)log_size;
 	
 	
 	malloc_regen_free_size(match_frame);
@@ -249,5 +271,29 @@ void free(void* ptr){
 
 
 void malloc_test(){
+	printf("Starting Malloc Test.\n");
+	void *ptr;
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+	
+	printf("allocating %d bytes\n",4000);
+	ptr=malloc(4000);
+	printf("retuned ptr: %X\n",ptr);
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+
+	printf("allocating %d bytes\n",1000);
+	ptr=malloc(1000);
+	printf("retuned ptr: %X\n",ptr);
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+
+	printf("allocating %d bytes\n",32);
+	ptr=malloc(32);
+	printf("retuned ptr: %X\n",ptr);
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+	
+	printf("allocating %d bytes\n",3000);
+	ptr=malloc(3000);
+	printf("retuned ptr: %X\n",ptr);
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+	
 	
 }

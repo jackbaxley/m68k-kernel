@@ -27,5 +27,6 @@ void* frame_addr(uint16_t p);
 
 void* malloc(uint32_t size);
 void free(void *ptr);
+void malloc_test();
 
 #endif
