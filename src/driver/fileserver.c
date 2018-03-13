@@ -1,6 +1,7 @@
 #include "fileserver.h"
 #include "stdlib.h"
 #include "stdio.h"
+#include "error.h"
 
 #define FILESERVER_CMD_SEEK 1
 #define FILESERVER_CMD_READ 2
@@ -39,7 +40,7 @@ void fileserver_write_sector(fs_node_t* dev, uint32_t sec, uint8_t* buffer){
 
 uint32_t fileserver_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer){
 	if(offset%FILESERVER_SECTOR_SIZE){//if offset is not sector alligned, return 0;
-		//error
+		PR_ERROR
 		return 0;
 	}
 	
@@ -55,7 +56,7 @@ uint32_t fileserver_read(fs_node_t* node, uint32_t offset, uint32_t size, uint8_
 
 uint32_t fileserver_write(fs_node_t* node, uint32_t offset, uint32_t size, uint8_t* buffer){
 	if(offset%FILESERVER_SECTOR_SIZE){//if offset is not sector alligned, return 0;
-		//error
+		PR_ERROR
 		return 0;
 	}
 	

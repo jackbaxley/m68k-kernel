@@ -7,6 +7,7 @@
 #include "fs.h"
 #include "ext2.h"
 #include "fileserver.h"
+#include "error.h"
 
 extern char k_end;
 extern char s_stack_top;

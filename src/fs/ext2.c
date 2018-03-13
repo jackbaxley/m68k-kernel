@@ -1,5 +1,6 @@
 #include "ext2.h"
 #include "stdlib.h"
+#include "error.h"
 
 #define EXT2_OFFSET_S_INODES_COUNT 			0
 #define EXT2_OFFSET_S_BLOCKS_COUNT			4
@@ -210,7 +211,7 @@ void ext2_read_inode_block(ext2_system_t *filesystem, inode_n_t inode_n,ext2_ino
 	}else if(inode_n-12-epb-epb*epb < epb*epb*epb){// triple link
 		
 	}else{
-		//error
+		PR_ERROR
 		return;
 	}
 	
