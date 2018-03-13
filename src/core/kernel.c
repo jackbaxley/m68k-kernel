@@ -58,7 +58,7 @@ void kmain(){
 	init_processes();
 	printf("%d frames free\n",init_memory() );
 	
-	malloc_test();
+	//malloc_test();
 
 	printf("Kernel Started\n");
 	printf("Built: %s\n",get_buildtime());

@@ -234,7 +234,7 @@ void* malloc(uint32_t size){
 	while(search){
 		uint8_t cur_chunk_size=((f_ptr[l_ptr])&0x07);
 		
-		printf("search chunk size %d, match size %d, cur meta byte %X\n",cur_chunk_size,match_log_size,f_ptr[l_ptr]);
+		//printf("search chunk size %d, match size %d, cur meta byte %X\n",cur_chunk_size,match_log_size,f_ptr[l_ptr]);
 		//if the current chunk is the desired chunk
 		if( !((f_ptr[l_ptr])&0x80) && cur_chunk_size==match_log_size){
 			search=0;
@@ -250,7 +250,7 @@ void* malloc(uint32_t size){
 		}		
 	}
 	
-	printf("log_size%d\n",log_size);
+	//printf("log_size%d\n",log_size);
 	
 	//now that we have the match chunk, if the match chunk is too big
 	//we have to divide the chunk to the correct size
@@ -274,7 +274,7 @@ void free(void* ptr){
 	if(ptr==NULL)
 		return;
 	
-	uint8_t *f_ptr = (uint8_t*)ptr-(uint8_t*)((uint32_t)ptr%4096);
+	uint8_t *f_ptr = (uint8_t*)((uint32_t)ptr-((uint32_t)ptr%4096));
 	uint16_t l_ptr= (uint8_t*)ptr-f_ptr-1;
 	if(l_ptr&31){
 		PR_ERROR
@@ -318,14 +318,14 @@ void free(void* ptr){
 				}
 				l_ptr=l_ptr&pl_ptr;//make l_ptr the smaller of the two;
 				f_ptr[l_ptr]=i+1;//the new bigger chunk
-				printf("recombining two %d into a %d\n",i,i+1);
+				//printf("recombining two %d into a %d\n",i,i+1);
 			}else{
 				break;
 			}
 		}
 	}
 	if(ret_frame){
-		printf("Returning a frame\n");
+		//printf("Returning a frame\n");
 		//shift the array down
 		for(int i=match_frame;i<malloc_n_frames-1;i++){
 			malloc_frames[i]=malloc_frames[i+1];
@@ -347,22 +347,22 @@ void malloc_test(){
 	
 	printf("allocating %d bytes\n",4000);
 	ptr1=malloc(4000);
-	printf("retuned ptr: %X\n",ptr1);
+	printf("retuned ptr: %X\n",(uint32_t)ptr1);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 
 	printf("allocating %d bytes\n",1000);
 	ptr2=malloc(1000);
-	printf("retuned ptr: %X\n",ptr2);
+	printf("retuned ptr: %X\n",(uint32_t)ptr2);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 
 	printf("allocating %d bytes\n",32);
 	ptr3=malloc(32);
-	printf("retuned ptr: %X\n",ptr3);
+	printf("retuned ptr: %X\n",(uint32_t)ptr3);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 	
 	printf("allocating %d bytes\n",3000);
 	ptr4=malloc(3000);
-	printf("retuned ptr: %X\n",ptr4);
+	printf("retuned ptr: %X\n",(uint32_t)ptr4);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 	
 	printf("Freeing pt2\n");
