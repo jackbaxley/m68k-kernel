@@ -184,6 +184,45 @@ uint32_t ext2_write(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *bu
 	return 0;
 }
 
+//opt_inode is optional, will be read from fs otherwise
+void ext2_read_inode_block(ext2_system_t *filesystem, inode_n_t inode_n,ext2_inode_t* opt_inode){
+	ext2_inode_t* inode;
+	ext2_inode_t bu_inode;//backup inode structure
+	
+	//entries per block
+	uint32_t epb=ext2_block_size(filesystem)/4;
+	
+	if(opt_inode){
+		inode=opt_inode;
+	}else{
+		ext2_read_inode(filesystem,inode_n,&bu_inode);
+		inode=&bu_inode;
+	}
+	
+	uint32_t block_id;
+	
+	if(inode_n < 12){// direct link
+		block_id=inode->i_block[inode_n];
+	}else if(inode_n-12 < epb){// single link
+		
+	}else if(inode_n-12-epb < epb*epb){// double link
+		
+	}else if(inode_n-12-epb-epb*epb < epb*epb*epb){// triple link
+		
+	}else{
+		//error
+		return;
+	}
+	
+}
+
+void ext2_index_dir(fs_node_t *node, uint32_t index){
+	ext2_inode_t inode;
+	ext2_read_inode(node->device, node->inode, &inode);
+	
+	
+}
+
 void ext2_make_system(ext2_system_t* filesystem, fs_node_t* device){
 	
 	filesystem->device=device;

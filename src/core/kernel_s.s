@@ -3,7 +3,7 @@
 	
 	.section .stack, "aw", @nobits
 	s_stack_bottom:
-	.skip 4096
+	.skip 8192
 	s_stack_top:
 	i_stack_bottom:
 	.skip 4096
