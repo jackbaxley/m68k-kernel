@@ -1,6 +1,8 @@
 #include "memory.h"
 #include "stdio.h"
 
+#define PR_ERROR printf("\x1B[35mERROR\x1B[0m %s:%d\n",__FILE__,__LINE__);
+
 //fix for MORERAM , replace 16 bits with 32 for more than 64k frames
 
 extern int k_end;
@@ -48,6 +50,11 @@ void return_list(uint16_t p){
 //gets the address of a frame from its frame_id
 void* frame_addr(uint16_t p){
 	return (void*)(MEMSTART+FRAME_SIZE*p);
+}
+
+//gets the id of a frame from its pointer
+fid_t frame_id(void* p){
+	return ((uint32_t)p-MEMSTART)/FRAME_SIZE;
 }
 
 uint16_t init_memory(){
@@ -141,8 +148,8 @@ void malloc_regen_free_size(fid_t frame){
 	while(search){
 		uint8_t cur_chunk_size=((f_ptr[l_ptr])&0x07);
 		
-		printf("offset %d\n",l_ptr);
-		printf("cur_chunk_size=%d, indicating size of %d\n",cur_chunk_size,(32<<cur_chunk_size));
+		//printf("offset %d\n",l_ptr);
+		//printf("cur_chunk_size=%d, indicating size of %d\n",cur_chunk_size,(32<<cur_chunk_size));
 		if( !( (f_ptr[l_ptr])&0x80 ) ){//if chunk is free
 			mask|=(1<<cur_chunk_size);
 		}
@@ -152,7 +159,7 @@ void malloc_regen_free_size(fid_t frame){
 		
 		if(l_ptr>4096){
 			//error this shouldnt happen
-			printf("malloc error,l_ptr=%d %s:%d\n",l_ptr,__FILE__,__LINE__);
+			PR_ERROR
 			return;
 		}
 		if(l_ptr==4096){
@@ -162,7 +169,7 @@ void malloc_regen_free_size(fid_t frame){
 	}
 	
 	malloc_frames_free_size[frame]=mask;
-	printf("Free Sizes Mask: %X\n",mask);
+	//printf("Free Sizes Mask: %X\n",mask);
 }
 
 /*
@@ -207,7 +214,7 @@ void* malloc(uint32_t size){
 	//if theres no existing page that this allocation will fit in,
 	//allocate a new page
 	if(!match_found){
-		printf("No Match, allocated new frame\n");
+		//printf("No Match, allocated new frame\n");
 		match_frame=malloc_n_frames++;
 		match_log_size=7;
 		malloc_frames[match_frame]=get_frame();
@@ -238,7 +245,7 @@ void* malloc(uint32_t size){
 		
 		if(l_ptr>=4096){
 			//error this shouldnt happen
-			printf("malloc \x1B[35mERROR\x1B[0m %s:%d\n",__FILE__,__LINE__);
+			PR_ERROR
 			return NULL;
 		}		
 	}
@@ -266,34 +273,108 @@ void* malloc(uint32_t size){
 void free(void* ptr){
 	if(ptr==NULL)
 		return;
+	
+	uint8_t *f_ptr = (uint8_t*)ptr-(uint8_t*)((uint32_t)ptr%4096);
+	uint16_t l_ptr= (uint8_t*)ptr-f_ptr-1;
+	if(l_ptr&31){
+		PR_ERROR
+		//error if the pointer isnt alligned
+		return;
+	}
+	
+	//the frame_id
+	fid_t f_id=frame_id(f_ptr);
+	
+	int match_frame;
+	int match=0;
+	for(int i=0;i<malloc_n_frames;i++){
+		if(malloc_frames[i]==f_id){
+			match=1;
+			match_frame=i;
+			break;
+		}
+	}
+	if(!match){
+		PR_ERROR
+		return;
+	}
+	
+	uint8_t log_size=f_ptr[l_ptr]&0x07;
+	
+	int ret_frame=0;
+	
+	if(log_size==7){
+		ret_frame=1;
+	}else{
+		//recombine pairs
+		uint8_t pl_ptr; // pair to the local pointer
+		for(int i=log_size;i<7;i++){
+			//flip a bit to get the pair chunk pointer
+			pl_ptr=l_ptr^(32<<i);
+			if(!(f_ptr[pl_ptr]&0x80)){// if the pair chunk is free
+				if(i==6){// if the combining two 2048 chunks, give the whole frame back
+					ret_frame=1;
+					break;
+				}
+				l_ptr=l_ptr&pl_ptr;//make l_ptr the smaller of the two;
+				f_ptr[l_ptr]=i+1;//the new bigger chunk
+				printf("recombining two %d into a %d\n",i,i+1);
+			}else{
+				break;
+			}
+		}
+	}
+	if(ret_frame){
+		printf("Returning a frame\n");
+		//shift the array down
+		for(int i=match_frame;i<malloc_n_frames-1;i++){
+			malloc_frames[i]=malloc_frames[i+1];
+		}
+		malloc_n_frames--;
+		return_frame(f_id);
+		
+	}else{
+		malloc_regen_free_size(match_frame);
+	}
 }
 
 
 
 void malloc_test(){
 	printf("Starting Malloc Test.\n");
-	void *ptr;
+	void *ptr1,*ptr2,*ptr3,*ptr4;
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 	
 	printf("allocating %d bytes\n",4000);
-	ptr=malloc(4000);
-	printf("retuned ptr: %X\n",ptr);
+	ptr1=malloc(4000);
+	printf("retuned ptr: %X\n",ptr1);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 
 	printf("allocating %d bytes\n",1000);
-	ptr=malloc(1000);
-	printf("retuned ptr: %X\n",ptr);
+	ptr2=malloc(1000);
+	printf("retuned ptr: %X\n",ptr2);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 
 	printf("allocating %d bytes\n",32);
-	ptr=malloc(32);
-	printf("retuned ptr: %X\n",ptr);
+	ptr3=malloc(32);
+	printf("retuned ptr: %X\n",ptr3);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
 	
 	printf("allocating %d bytes\n",3000);
-	ptr=malloc(3000);
-	printf("retuned ptr: %X\n",ptr);
+	ptr4=malloc(3000);
+	printf("retuned ptr: %X\n",ptr4);
 	printf("malloc_n_frames: %d\n",malloc_n_frames);
+	
+	printf("Freeing pt2\n");
+	free(ptr2);
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+	printf("Freeing pt3\n");
+	free(ptr3);
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+	printf("Freeing pt1\n");
+	free(ptr1);
+	printf("malloc_n_frames: %d\n",malloc_n_frames);
+	
 	
 	
 }
