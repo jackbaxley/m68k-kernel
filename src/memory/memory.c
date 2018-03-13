@@ -1,7 +1,6 @@
 #include "memory.h"
 #include "stdio.h"
-
-#define PR_ERROR printf("\x1B[35mERROR\x1B[0m %s:%d\n",__FILE__,__LINE__);
+#include "error.h"
 
 //fix for MORERAM , replace 16 bits with 32 for more than 64k frames
 
